@@ -475,3 +475,17 @@ export async function checkScanQuota(
     globalHourlyLimit: GLOBAL_HOURLY_LIMIT,
   };
 }
+
+export async function markStuckScansAsFailed(
+  client: SupabaseClient,
+  brandId: string
+): Promise<void> {
+  // Mark any "running" scans older than 5 minutes as failed
+  const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  await client
+    .from("scans")
+    .update({ status: "failed" })
+    .eq("brand_id", brandId)
+    .eq("status", "running")
+    .lt("created_at", fiveMinAgo);
+}

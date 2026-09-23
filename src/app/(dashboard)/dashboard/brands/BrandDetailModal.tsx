@@ -165,12 +165,17 @@ export function BrandDetailModal({ brand, onClose, onChanged }: BrandDetailModal
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ brandId: brand.id }),
       });
+
+      // Handle non-JSON responses (e.g., Vercel 504 timeout HTML page)
+      const contentType = res.headers.get("content-type") ?? "";
+      if (!contentType.includes("application/json")) {
+        throw new Error(
+          "Scan took too long and timed out. Please try again — the system has been configured for longer scans."
+        );
+      }
+
       const data: unknown = await res.json();
-      if (
-        !data ||
-        typeof data !== "object" ||
-        (data as { ok?: unknown }).ok !== true
-      ) {
+      if (!data || typeof data !== "object" || (data as { ok?: unknown }).ok !== true) {
         const message =
           data && typeof data === "object"
             ? (data as { error?: unknown }).error

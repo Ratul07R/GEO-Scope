@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { checkScanQuota } from "@/lib/db";
+import { checkScanQuota, markStuckScansAsFailed } from "@/lib/db";
 import { runScan } from "@/lib/scanner";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 type ScanRequestBody = { brandId?: unknown };
 
@@ -99,6 +99,8 @@ export async function POST(request: Request) {
     }
 
     const competitorNames = (competitors ?? []).map((c) => c.name);
+
+    await markStuckScansAsFailed(supabase, brandId);
 
     const result = await runScan(
       supabase,
