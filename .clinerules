@@ -1,0 +1,17 @@
+# Project Rules for GEO Tool
+
+## Stack (Never change these without asking)
+- Frontend: Next.js 14 (App Router) + TypeScript (strict)
+- Styling: Tailwind CSS
+- Database: Supabase (Postgres)
+- Auth: Supabase Auth
+
+## Coding Rules
+- Always use TypeScript strict mode. Never use `any`.
+- Every API route must handle errors (try/catch).
+- Keep components modular and small.
+- Do not write massive files.
+
+## Workflow
+- Make ONE feature at a time. Do not build everything at once.
+- After each file change, wait for my approval.

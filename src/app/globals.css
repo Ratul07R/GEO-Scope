@@ -1,0 +1,226 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), monospace;
+  
+  --color-bg-base: #08090a;
+  --color-bg-surface: #101113;
+  --color-bg-elevated: #16171a;
+  
+  --color-border-subtle: #1f2023;
+  --color-border-strong: #2a2b2f;
+  
+  --color-text-primary: #f7f8f8;
+  --color-text-secondary: #8a8f98;
+  --color-text-tertiary: #62666d;
+  
+  --color-accent: #5e6ad2;
+  --color-accent-hover: #6e79dc;
+  --color-accent-muted: #5e6ad220;
+  
+  --color-success: #4cb782;
+  --color-warning: #f2c94c;
+  --color-danger: #eb5757;
+}
+
+@layer base {
+  * { border-color: var(--color-border-subtle); }
+  html { font-family: var(--font-sans); scroll-behavior: smooth; }
+  body {
+    background-color: var(--color-bg-base);
+    color: var(--color-text-primary);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background-color: var(--color-accent); color: white; }
+  
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a3b3f; }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes floatY {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -8px, 0); }
+}
+
+.float-slow-1 {
+  animation: floatY 7s ease-in-out infinite;
+}
+.float-slow-2 {
+  animation: floatY 8.5s ease-in-out infinite;
+  animation-delay: -2.5s;
+}
+.float-slow-3 {
+  animation: floatY 6.5s ease-in-out infinite;
+  animation-delay: -1s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float-slow-1, .float-slow-2, .float-slow-3 { animation: none; }
+}
+
+/* ── Chart animations ─────────────────────────────────────── */
+
+@keyframes drawPath {
+  from { stroke-dashoffset: var(--path-length, 1000); }
+  to   { stroke-dashoffset: 0; }
+}
+
+@keyframes pulseMarker {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.15); }
+}
+
+@keyframes growBar {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@keyframes ringDraw {
+  from { stroke-dashoffset: var(--ring-circumference, 276); }
+}
+
+@keyframes softGlow {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 0.9; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Applied via JS on mount */
+.animate-draw-path {
+  animation: drawPath 1800ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.animate-pulse-marker {
+  animation: pulseMarker 2400ms ease-in-out infinite;
+  transform-origin: center;
+}
+.animate-grow-bar {
+  animation: growBar 900ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: left center;
+}
+.animate-ring-draw {
+  animation: ringDraw 1400ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.animate-soft-glow {
+  animation: softGlow 3200ms ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-draw-path,
+  .animate-pulse-marker,
+  .animate-grow-bar,
+  .animate-ring-draw,
+  .animate-soft-glow {
+    animation: none;
+  }
+}
+
+/* ── Live chart feel ──────────────────────────────────────── */
+
+@keyframes shimmerSweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.4); }
+}
+
+@keyframes chartBreath {
+  0%, 100% { transform: scaleY(1); }
+  50%      { transform: scaleY(1.008); }
+}
+
+@keyframes rollUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.chart-shimmer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.chart-shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(94, 106, 210, 0.15),
+    transparent
+  );
+  animation: shimmerSweep 5s ease-in-out infinite;
+  transform: translateX(-100%);
+}
+
+.live-dot {
+  animation: livePulse 1800ms ease-in-out infinite;
+  /* fill-box keeps the pulse centred on the dot itself; the SVG default
+     (view-box) would scale it about the middle of the whole chart. */
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.chart-breath {
+  animation: chartBreath 6s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.animate-roll-up {
+  animation: rollUp 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-shimmer::after,
+  .live-dot,
+  .chart-breath,
+  .animate-roll-up { animation: none; }
+}
+
+/* The score number carries two motion classes at once. Both set the
+   `animation` shorthand, so the later class would otherwise win and drop
+   the other effect — compose them here so the roll-up fires on mount /
+   value change while the glow keeps pulsing. */
+.animate-soft-glow.animate-roll-up {
+  animation:
+    rollUp 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards,
+    softGlow 3200ms ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-soft-glow.animate-roll-up { animation: none; }
+}
