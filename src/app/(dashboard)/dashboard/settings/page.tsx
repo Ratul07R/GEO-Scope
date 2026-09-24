@@ -2,10 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { Copy, CreditCard, Key, Mail, Sparkles, User } from "lucide-react";
+import { CreditCard, Key, Mail, User } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel } from "@/components/ui/Panel";
-import { GhostButton, PrimaryButton } from "@/components/ui/Buttons";
 import { supabase } from "@/lib/supabase";
 
 const inputClassName =
@@ -34,30 +33,6 @@ function Section({ icon, title, description, children }: SectionProps) {
       </div>
       <div className="space-y-4 p-4 lg:p-5">{children}</div>
     </Panel>
-  );
-}
-
-function Field({
-  label,
-  defaultValue,
-  readOnly = false,
-}: {
-  label: string;
-  defaultValue: string;
-  readOnly?: boolean;
-}) {
-  return (
-    <label className="block min-w-0">
-      <span className="mb-1.5 block text-[12px] font-medium text-[var(--color-text-secondary)]">
-        {label}
-      </span>
-      <input
-        type="text"
-        defaultValue={defaultValue}
-        readOnly={readOnly}
-        className={`${inputClassName} ${readOnly ? "font-mono text-[var(--color-text-secondary)]" : ""}`}
-      />
-    </label>
   );
 }
 
@@ -256,7 +231,13 @@ export default function SettingsPage() {
         title="Settings"
         subtitle="Manage your profile, API access and subscription"
       >
-        <GhostButton icon={<Mail size={14} />}>Contact support</GhostButton>
+        <a
+          href="mailto:rutturat@gmail.com?subject=GeoScope%20Support"
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] px-3 text-[13px] font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-primary)]"
+        >
+          <Mail size={14} />
+          Contact support
+        </a>
       </PageHeader>
 
       <Section
@@ -272,10 +253,18 @@ export default function SettingsPage() {
         title="API Keys"
         description="Use the GeoScope API to pull visibility data into your own product."
       >
-        <Field label="Live API key" defaultValue="sk_live_9f2c····················" readOnly />
-        <div className="flex flex-wrap items-center gap-2">
-          <GhostButton icon={<Copy size={14} />}>Copy key</GhostButton>
-          <PrimaryButton icon={<Key size={14} />}>Generate new key</PrimaryButton>
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] p-4">
+          <div>
+            <div className="text-[13px] font-medium text-[var(--color-text-primary)]">
+              API access
+            </div>
+            <p className="mt-1 text-[12px] leading-relaxed text-[var(--color-text-secondary)]">
+              Programmatic access to your GeoScope data. Coming soon for Pro and Agency plans.
+            </p>
+          </div>
+          <span className="shrink-0 rounded-full bg-[var(--color-bg-elevated)] px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-[var(--color-text-tertiary)]">
+            Coming soon
+          </span>
         </div>
       </Section>
 
@@ -285,21 +274,42 @@ export default function SettingsPage() {
         description="You are on the Free plan. Upgrade to unlock unlimited scans and more engines."
       >
         <div className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] p-4">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <span className="text-[13px] font-medium text-[var(--color-text-primary)]">
-              Free plan
-            </span>
-            <span className="text-[12px] text-[var(--color-text-tertiary)]">
-              42 / 100 scans used
-            </span>
-          </div>
-          <div className="mt-3 h-1 overflow-hidden rounded-full bg-[var(--color-bg-elevated)]">
-            <div className="h-full w-[42%] rounded-full bg-[var(--color-accent)]" />
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[13px] font-medium text-[var(--color-text-primary)]">
+                  Free plan
+                </span>
+                <span className="rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[var(--color-accent)]">
+                  Current
+                </span>
+              </div>
+              <p className="mt-1 text-[12px] text-[var(--color-text-secondary)]">
+                1 scan per day · 10 scans per month · 1 brand
+              </p>
+            </div>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <PrimaryButton icon={<Sparkles size={14} />}>Upgrade to Pro</PrimaryButton>
-          <GhostButton icon={<CreditCard size={14} />}>Manage billing</GhostButton>
+
+        <div className="mt-3 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-[13px] font-medium text-[var(--color-text-primary)]">
+                Upgrade to Pro
+              </div>
+              <p className="mt-1 text-[12px] text-[var(--color-text-secondary)]">
+                More scans, unlimited history, more brands, PDF reports.
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled
+              title="Paid plans launching soon"
+              className="shrink-0 inline-flex h-8 items-center justify-center rounded-md bg-[var(--color-bg-elevated)] px-3 text-[12px] font-medium text-[var(--color-text-tertiary)] cursor-not-allowed opacity-60"
+            >
+              Coming soon
+            </button>
+          </div>
         </div>
       </Section>
     </div>
