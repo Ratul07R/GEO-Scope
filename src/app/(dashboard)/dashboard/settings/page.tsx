@@ -232,7 +232,9 @@ export default function SettingsPage() {
         subtitle="Manage your profile, API access and subscription"
       >
         <a
-          href="mailto:rutturat@gmail.com?subject=GeoScope%20Support"
+          href="https://mail.google.com/mail/?view=cm&fs=1&to=rutturat@gmail.com&su=GeoScope%20Support"
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] px-3 text-[13px] font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-primary)]"
         >
           <Mail size={14} />

@@ -149,6 +149,8 @@ export type MentionRecord = {
   position: number | null;
   sentiment: string | null;
   citation: string | null;
+  response_text?: string | null;
+  response_snippet?: string | null;
   created_at: string;
 };
 

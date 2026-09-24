@@ -1,28 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { groq, GROQ_MODEL } from "@/lib/groq";
 import { openrouter, CHAT_MODEL } from "@/lib/openrouter";
+import { gemini, GEMINI_MODEL } from "@/lib/gemini";
 
 const TOTAL_PROMPTS = 10;
-const PROMPT_DELAY_MS = 200;
 const CITATION_RADIUS = 300;
-
-async function callAI(prompt: string): Promise<string> {
-  const completion = await openrouter.chat.completions.create({
-    model: CHAT_MODEL,
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.7,
-    max_tokens: 2000,
-  });
-  return completion.choices[0]?.message?.content ?? "";
-}
-
-export type MentionSentiment = "positive" | "neutral" | "negative";
-
-export type MentionAnalysis = {
-  mentioned: boolean;
-  position: number | null;
-  sentiment: MentionSentiment | null;
-  citation: string | null;
-};
 
 export type ScanResult = {
   scanId: string;
@@ -31,8 +13,164 @@ export type ScanResult = {
   mentioned: number;
 };
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+async function callAI(prompt: string): Promise<string> {
+  const messages = [{ role: "user" as const, content: prompt }];
+
+  // Provider 1: Groq (most generous free tier)
+  try {
+    const completion = await groq.chat.completions.create({
+      model: GROQ_MODEL,
+      messages,
+      temperature: 0.7,
+      max_tokens: 2000,
+    });
+    return completion.choices[0]?.message?.content ?? "";
+  } catch (groqError) {
+    console.error(
+      "[scanner] Groq failed, falling back to Gemini:",
+      groqError instanceof Error ? groqError.message : String(groqError)
+    );
+  }
+
+  // Provider 2: Gemini
+  try {
+    const completion = await gemini.chat.completions.create({
+      model: GEMINI_MODEL,
+      messages,
+      temperature: 0.7,
+      max_tokens: 2000,
+    });
+    return completion.choices[0]?.message?.content ?? "";
+  } catch (geminiError) {
+    console.error(
+      "[scanner] Gemini failed, falling back to OpenRouter:",
+      geminiError instanceof Error ? geminiError.message : String(geminiError)
+    );
+  }
+
+  // Provider 3: OpenRouter
+  try {
+    const completion = await openrouter.chat.completions.create({
+      model: CHAT_MODEL,
+      messages,
+      temperature: 0.7,
+      max_tokens: 2000,
+    });
+    return completion.choices[0]?.message?.content ?? "";
+  } catch (openRouterError) {
+    console.error(
+      "[scanner] OpenRouter failed too:",
+      openRouterError instanceof Error
+        ? openRouterError.message
+        : String(openRouterError)
+    );
+    throw new Error("All three AI providers failed for this prompt");
+  }
+}
+
+function extractJsonArray(text: string): string[] {
+  const fenceMatch = text.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
+  const rawMatch = text.match(/\[[\s\S]*\]/);
+  const candidate = fenceMatch?.[1] ?? rawMatch?.[0];
+  if (!candidate) return [];
+  try {
+    const parsed: unknown = JSON.parse(candidate);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((p): p is string => typeof p === "string");
+  } catch {
+    return [];
+  }
+}
+
+// Generate category-based discovery prompts. NO brand name in prompts.
+async function generatePrompts(
+  client: SupabaseClient,
+  brandId: string,
+  brandName: string,
+  domain: string,
+  competitorNames: string[]
+): Promise<string[]> {
+  // Check cache first
+  const { data: cached, error: cacheError } = await client
+    .from("brand_prompts")
+    .select("prompt")
+    .eq("brand_id", brandId)
+    .limit(TOTAL_PROMPTS);
+
+  if (!cacheError && cached && cached.length >= TOTAL_PROMPTS) {
+    console.log("[scanner] using cached prompts");
+    return cached.map((row) => row.prompt);
+  }
+
+  const instruction = `You are generating search queries for an AI visibility study.
+
+Brand being studied: ${brandName}
+Industry/category: infer from the domain "${domain}" and the competitors below.
+Known competitors: ${competitorNames.join(", ") || "none provided"}
+
+TASK: Generate exactly 10 realistic questions a potential customer would ask 
+an AI assistant when researching this category.
+
+STRICT RULES:
+1. DO NOT include the brand name "${brandName}" anywhere.
+2. DO NOT include competitor names either.
+3. Prompts must be category-level discovery questions. Examples of STYLE:
+   - "best project management tools for remote teams"
+   - "how to organize personal notes efficiently"
+   - "top CRM software for small businesses in 2026"
+   - "which note-taking app has the best collaboration features"
+4. Vary angles: use cases, comparisons by category, buying guides, 
+   how-to questions, recommendations.
+5. Each prompt must be a complete, natural question.
+
+Return ONLY a JSON array of 10 strings. No markdown, no explanation.
+
+Example: ["best tools for X", "which platform is easiest for Y", ...]`;
+
+  let promptsToUse: string[] | null = null;
+  try {
+    const response = await callAI(instruction);
+    const prompts = extractJsonArray(response);
+    if (prompts.length >= TOTAL_PROMPTS) {
+      promptsToUse = prompts.slice(0, TOTAL_PROMPTS);
+    }
+  } catch (err) {
+    console.error("[scanner] prompt generation failed:", err);
+  }
+
+  if (!promptsToUse) {
+    promptsToUse = [
+      "best tools in this category for small teams",
+      "top rated platforms for this use case",
+      "which software do professionals recommend",
+      "comparison of leading solutions in this space",
+      "affordable options for startups",
+      "enterprise grade platforms reviewed",
+      "most popular tools used by teams in 2026",
+      "beginner friendly tools for this category",
+      "tools with best customer reviews",
+      "which platform has the best free plan",
+    ];
+  }
+
+  try {
+    const rows = promptsToUse.map((prompt) => ({
+      brand_id: brandId,
+      prompt,
+    }));
+    const { error: saveError } = await client
+      .from("brand_prompts")
+      .insert(rows);
+    if (saveError) {
+      console.error("[scanner] failed to cache prompts:", saveError.message);
+    } else {
+      console.log("[scanner] cached prompts for brand", brandId);
+    }
+  } catch (err) {
+    console.error("[scanner] prompt cache save threw:", err);
+  }
+
+  return promptsToUse;
 }
 
 async function runWithConcurrency<T, R>(
@@ -59,120 +197,75 @@ async function runWithConcurrency<T, R>(
   return results;
 }
 
-function extractJsonArray(text: string): string[] | null {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced ? fenced[1] : text;
-  const start = candidate.indexOf("[");
-  const end = candidate.lastIndexOf("]");
-  if (start === -1 || end === -1 || end <= start) return null;
-  try {
-    const parsed: unknown = JSON.parse(candidate.slice(start, end + 1));
-    if (!Array.isArray(parsed)) return null;
-    const items = parsed
-      .filter((item): item is string => typeof item === "string")
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0);
-    return items.length > 0 ? items : null;
-  } catch {
-    return null;
-  }
+type AnalysisResult = {
+  mentioned: boolean;
+  position: number | null;
+  sentiment: "positive" | "neutral" | "negative" | null;
+  citation: string | null;
+  snippet: string | null;
+};
+
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function fallbackPrompts(brandName: string, competitors: string[]): string[] {
-  const rival = competitors[0] ?? "its main competitor";
-  return [
-    `What is ${brandName} and what does it offer?`,
-    `Is ${brandName} worth using?`,
-    `How does ${brandName} compare to ${rival}?`,
-    `What are the best alternatives to ${brandName}?`,
-    `${brandName} pricing and plans explained`,
-    `What are the pros and cons of ${brandName}?`,
-    `Which is better: ${brandName} or ${rival}?`,
-    `${brandName} reviews from real users`,
-    `Does ${brandName} integrate with other tools?`,
-    `Who should use ${brandName}?`,
-  ];
-}
-
-function normalizePromptList(
-  prompts: string[],
-  brandName: string,
-  competitors: string[]
-): string[] {
-  const unique = Array.from(
-    new Set(prompts.map((prompt) => prompt.trim()).filter((prompt) => prompt.length > 0))
-  );
-  for (const fallback of fallbackPrompts(brandName, competitors)) {
-    if (unique.length >= TOTAL_PROMPTS) break;
-    if (!unique.includes(fallback)) unique.push(fallback);
-  }
-  return unique.slice(0, TOTAL_PROMPTS);
-}
-
-export async function generatePrompts(
-  brandName: string,
-  domain: string,
-  competitors: string[]
-): Promise<string[]> {
-  const domainHint = domain ? ` The brand's website is ${domain}.` : "";
-  const competitorHint =
-    competitors.length > 0
-      ? ` Known competitors to reference in comparison queries: ${competitors.join(", ")}.`
-      : "";
-  const instruction =
-    `Generate exactly ${TOTAL_PROMPTS} realistic search queries that a real user might type into an AI assistant ` +
-    `when researching the brand "${brandName}".${domainHint}${competitorHint} ` +
-    `Return ONLY a raw JSON array of ${TOTAL_PROMPTS} strings — no markdown fences, no numbering, no commentary.`;
-
-  try {
-    const text = await callAI(instruction);
-    const parsed = extractJsonArray(text);
-    if (parsed) {
-      return normalizePromptList(parsed, brandName, competitors);
-    }
-    console.error("generatePrompts: could not parse Gemini output, using fallback prompts");
-  } catch (error) {
-    console.error("generatePrompts: Gemini call failed, using fallback prompts", error);
-  }
-  return normalizePromptList(fallbackPrompts(brandName, competitors), brandName, competitors);
-}
-
-export function analyzeResponse(
+function analyzeResponse(
   prompt: string,
   responseText: string,
   brandName: string,
-  competitors: string[]
-): MentionAnalysis {
+  competitorNames: string[]
+): AnalysisResult {
   void prompt;
+  const lowerResponse = responseText.toLowerCase();
+  const brandRegex = new RegExp(`\\b${escapeRegex(brandName.toLowerCase())}\\b`, "i");
+  const mentioned = brandRegex.test(responseText);
 
-  const haystack = responseText.toLowerCase();
-  const brand = brandName.trim().toLowerCase();
-  const brandIndex = brand.length > 0 ? haystack.indexOf(brand) : -1;
-
-  if (brandIndex === -1) {
-    return { mentioned: false, position: null, sentiment: null, citation: null };
+  if (!mentioned) {
+    return {
+      mentioned: false,
+      position: null,
+      sentiment: null,
+      citation: null,
+      snippet: null,
+    };
   }
 
-  const candidates: Array<{ name: string; index: number }> = [{ name: brandName, index: brandIndex }];
-  for (const competitor of competitors) {
-    const name = competitor.trim().toLowerCase();
-    if (name.length === 0) continue;
-    const index = haystack.indexOf(name);
-    if (index !== -1) candidates.push({ name: competitor, index });
+  const matchIndex = lowerResponse.search(brandRegex);
+  const snippetStart = Math.max(0, matchIndex - 150);
+  const snippetEnd = Math.min(responseText.length, matchIndex + 150);
+  const snippet = responseText.slice(snippetStart, snippetEnd).trim();
+
+  const brandFirstIndex = matchIndex;
+  const competitorFirstIndices: number[] = [];
+  for (const comp of competitorNames) {
+    const compRegex = new RegExp(`\\b${escapeRegex(comp.toLowerCase())}\\b`, "i");
+    const idx = lowerResponse.search(compRegex);
+    if (idx >= 0) competitorFirstIndices.push(idx);
   }
-  candidates.sort((a, b) => a.index - b.index || a.name.length - b.name.length);
-  const position = candidates.findIndex((candidate) => candidate.index === brandIndex) + 1;
+  const allFirstIndices = [brandFirstIndex, ...competitorFirstIndices].sort(
+    (a, b) => a - b
+  );
+  const position = allFirstIndices.indexOf(brandFirstIndex) + 1;
 
-  let sentiment: MentionSentiment = "neutral";
-  if (position === 1) sentiment = "positive";
-  else if (position > 1 && position <= 3) sentiment = "neutral";
+  const context = lowerResponse.slice(snippetStart, snippetEnd);
+  const positiveWords = ["best", "top", "leading", "popular", "recommend", "excellent", "powerful", "great", "ideal", "strong"];
+  const negativeWords = ["worst", "poor", "avoid", "lacking", "expensive", "buggy", "slow", "difficult", "issue", "problem"];
+  let positiveScore = 0;
+  let negativeScore = 0;
+  for (const w of positiveWords) if (context.includes(w)) positiveScore++;
+  for (const w of negativeWords) if (context.includes(w)) negativeScore++;
+  const sentiment: "positive" | "neutral" | "negative" =
+    positiveScore > negativeScore
+      ? "positive"
+      : negativeScore > positiveScore
+        ? "negative"
+        : "neutral";
 
-  const windowStart = Math.max(0, brandIndex - CITATION_RADIUS);
-  const window = responseText.slice(windowStart, brandIndex + CITATION_RADIUS);
-  const citationMatch = window.match(/https?:\/\/[^\s\)\"']+/);
-  const citation = citationMatch ? citationMatch[0] : null;
+  const urlRegex = /https?:\/\/[^\s)"']+/g;
+  const citationCandidates = responseText.match(urlRegex) ?? [];
+  const citation = citationCandidates[0] ?? null;
 
-  return { mentioned: true, position, sentiment, citation };
+  return { mentioned, position, sentiment, citation, snippet };
 }
 
 export async function runScan(
@@ -199,7 +292,13 @@ export async function runScan(
     if (scanError) throw new Error(scanError.message);
     scanId = scan.id;
 
-    const prompts = await generatePrompts(brandName, domain, competitorNames);
+    const prompts = await generatePrompts(
+      client,
+      brandId,
+      brandName,
+      domain,
+      competitorNames
+    );
 
     const CONCURRENCY = 4;
     const startTime = Date.now();
@@ -224,6 +323,8 @@ export async function runScan(
           position: analysis.position,
           sentiment: analysis.sentiment,
           citation: analysis.citation,
+          response_text: responseText.slice(0, 4000),
+          response_snippet: analysis.snippet,
         });
         if (mentionError) throw new Error(mentionError.message);
         if (analysis.mentioned) mentionedCount += 1;

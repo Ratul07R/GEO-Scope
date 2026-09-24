@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { getScanWithMentions, type MentionRecord, type ScanRecord } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
@@ -32,12 +32,6 @@ function scoreTone(score: number): string {
   if (score >= 80) return "var(--color-success)";
   if (score >= 50) return "var(--color-warning)";
   return "var(--color-danger)";
-}
-
-function sentimentBadgeClass(sentiment: string): string {
-  if (sentiment === "positive") return "bg-[var(--color-success)]/10 text-[var(--color-success)]";
-  if (sentiment === "negative") return "bg-[var(--color-danger)]/10 text-[var(--color-danger)]";
-  return "bg-[var(--color-text-tertiary)]/10 text-[var(--color-text-secondary)]";
 }
 
 const STATUS_META: Record<string, { label: string; className: string }> = {
@@ -68,6 +62,7 @@ export default function ScanDetailPage() {
   const [data, setData] = useState<ScanData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [expandedMentionId, setExpandedMentionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!scanId) return;
@@ -272,134 +267,124 @@ export default function ScanDetailPage() {
         </div>
       </Panel>
 
-      <Panel>
-        <div className="border-b border-[var(--color-border-subtle)] px-4 py-3.5 lg:px-5">
-          <h2 className="text-[13px] font-semibold text-[var(--color-text-primary)]">
-            Query Results
-          </h2>
-          <p className="mt-0.5 text-[12px] text-[var(--color-text-tertiary)]">
-            {mentions.length} prompts analyzed
-          </p>
+      <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)]">
+        <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 py-3.5 lg:px-5">
+          <div>
+            <h2 className="text-[13px] font-semibold text-[var(--color-text-primary)]">Query Results</h2>
+            <p className="mt-0.5 text-[11px] text-[var(--color-text-tertiary)]">{mentions.length} prompts analyzed · click any row to see AI response</p>
+          </div>
+          <div className="hidden shrink-0 items-center gap-3 text-[10px] text-[var(--color-text-tertiary)] md:flex">
+            <span className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)]" />Mentioned</span>
+            <span className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-[var(--color-text-tertiary)]" />Not mentioned</span>
+          </div>
         </div>
-        <ul className="divide-y divide-[var(--color-border-subtle)]">
-            {mentions.map((mention, index) => (
-              <li
-                key={mention.id}
-                className={`px-4 py-3 lg:px-5 ${index % 2 === 1 ? "bg-[var(--color-bg-elevated)]/40" : ""}`}
-              >
-                <div className="flex items-start gap-3">
-                  <span
-                    aria-label={mention.mentioned ? "Mentioned" : "Not mentioned"}
-                    className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                      mention.mentioned
-                        ? "bg-[var(--color-success)]"
-                        : "bg-[var(--color-border-strong)]"
-                    }`}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13px] leading-relaxed text-[var(--color-text-primary)]">
+        <div className="divide-y divide-[var(--color-border-subtle)]">
+          {mentions.map((mention) => {
+            const isExpanded = expandedMentionId === mention.id;
+            const isMentioned = mention.mentioned === true;
+            return (
+              <div key={mention.id}>
+                <button type="button" onClick={() => setExpandedMentionId(isExpanded ? null : mention.id)} className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-[var(--color-bg-base)] lg:px-5">
+                  <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${isMentioned ? "bg-[var(--color-success)]" : "bg-[var(--color-text-tertiary)]"}`} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[13px] text-[var(--color-text-primary)]">
                       {mention.prompt}
-                    </p>
-                    {mention.citation && mention.citation.length > 0 ? (
-                      <a
-                        href={mention.citation}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1 flex items-center gap-1 text-[11px] text-[var(--color-accent)] transition-colors hover:text-[var(--color-accent-hover)]"
-                      >
-                        <ExternalLink size={10} className="shrink-0" />
-                        <span className="truncate">{mention.citation}</span>
-                      </a>
-                    ) : null}
-                  </div>
-                  {mention.mentioned ? (
-                    <div className="flex shrink-0 items-center gap-1.5">
-                      <span className="inline-flex h-5 items-center rounded bg-[var(--color-accent-muted)] px-1.5 text-[10px] font-semibold text-[var(--color-accent)]">
-                        #{mention.position ?? "?"}
-                      </span>
-                      {mention.sentiment ? (
-                        <span
-                          className={`inline-flex h-5 items-center rounded px-1.5 text-[10px] font-medium capitalize ${sentimentBadgeClass(mention.sentiment)}`}
+                    </span>
+                    {mention.citation && (
+                      <span className="mt-1 flex items-center gap-1 text-[11px] text-[var(--color-text-tertiary)]">
+                        <svg
+                          className="h-3 w-3"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
                         >
-                          {mention.sentiment}
-                        </span>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ul>
-      </Panel>
+                          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                        </svg>
+                        <span className="truncate">{mention.citation}</span>
+                      </span>
+                    )}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    {isMentioned && mention.position !== null && (
+                      <span
+                        title="Position among all brands mentioned in the response"
+                        className="rounded-md bg-[var(--color-bg-elevated)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-text-secondary)]"
+                      >
+                        #{mention.position}
+                      </span>
+                    )}
+                    {isMentioned && mention.sentiment && (
+                      <span
+                        title="AI's tone about your brand in this response"
+                        className={`rounded-md px-1.5 py-0.5 text-[10px] font-medium ${
+                          mention.sentiment === "positive"
+                            ? "bg-[var(--color-success)]/10 text-[var(--color-success)]"
+                            : mention.sentiment === "negative"
+                              ? "bg-[var(--color-danger)]/10 text-[var(--color-danger)]"
+                              : "bg-[var(--color-bg-elevated)] text-[var(--color-text-secondary)]"
+                        }`}
+                      >
+                        {mention.sentiment.charAt(0).toUpperCase() +
+                          mention.sentiment.slice(1)}
+                      </span>
+                    )}
+                    <svg
+                      className={`h-3.5 w-3.5 text-[var(--color-text-tertiary)] transition-transform ${
+                        isExpanded ? "rotate-180" : ""
+                      }`}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </span>
+                </button>
+                {isExpanded && <div className="border-t border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] px-4 py-3 lg:px-5">{isMentioned ? <><div className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-text-tertiary)]">What the AI said</div><p className="mt-1.5 text-[12px] leading-relaxed text-[var(--color-text-secondary)]">{mention.response_snippet ? <>…{mention.response_snippet}…</> : "Response snippet not available for this scan."}</p>{mention.response_text && <details className="mt-3 group"><summary className="cursor-pointer text-[11px] font-medium text-[var(--color-accent)] hover:underline">View full response</summary><pre className="mt-2 max-h-64 overflow-y-auto whitespace-pre-wrap rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-2.5 text-[11px] leading-relaxed text-[var(--color-text-secondary)]">{mention.response_text}</pre></details>}</> : <><div className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-text-tertiary)]">Why this matters</div><p className="mt-1.5 text-[12px] leading-relaxed text-[var(--color-text-secondary)]">AI did not mention your brand when answering this query. This is a visibility gap — a competitor may have been recommended instead.</p>{mention.response_text && <details className="mt-3 group"><summary className="cursor-pointer text-[11px] font-medium text-[var(--color-accent)] hover:underline">See what AI answered instead</summary><pre className="mt-2 max-h-64 overflow-y-auto whitespace-pre-wrap rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-2.5 text-[11px] leading-relaxed text-[var(--color-text-secondary)]">{mention.response_text}</pre></details>}</>}</div>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {recommendations.length > 0 && (
-        <Panel className="p-6">
-          <div className="flex items-center gap-2">
-            <Lightbulb size={16} className="text-[var(--color-accent)]" />
-            <h2 className="text-[15px] font-semibold text-[var(--color-text-primary)]">
-              Recommendations
-            </h2>
-            <span className="rounded-full bg-[var(--color-bg-elevated)] px-2 py-0.5 text-[10px] font-medium text-[var(--color-text-secondary)]">
-              {recommendations.length} actions
-            </span>
+        <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)]">
+          <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 py-3.5 lg:px-5">
+            <div>
+              <div className="flex items-center gap-2">
+                <Lightbulb size={14} className="text-[var(--color-accent)]" />
+                <h2 className="text-[13px] font-semibold text-[var(--color-text-primary)]">Recommendations</h2>
+                <span className="rounded-full bg-[var(--color-bg-elevated)] px-2 py-0.5 text-[10px] font-medium text-[var(--color-text-secondary)]">{recommendations.length} actions</span>
+              </div>
+              <p className="mt-0.5 text-[11px] text-[var(--color-text-tertiary)]">Prioritized roadmap to improve your AI visibility</p>
+            </div>
           </div>
-          <p className="mt-1 text-[12px] text-[var(--color-text-tertiary)]">
-            Based on your scan results — how to improve your AI visibility.
-          </p>
-
-          <div className="mt-5 space-y-3">
-            {recommendations.map((rec) => {
-              const Icon =
-                rec.severity === "critical"
-                  ? XCircle
-                  : rec.severity === "warning"
-                    ? AlertTriangle
-                    : CheckCircle2;
-              const iconColor =
-                rec.severity === "critical"
-                  ? "text-[var(--color-danger)]"
-                  : rec.severity === "warning"
-                    ? "text-[var(--color-warning)]"
-                    : "text-[var(--color-success)]";
-              const borderColor =
-                rec.severity === "critical"
-                  ? "border-l-[var(--color-danger)]"
-                  : rec.severity === "warning"
-                    ? "border-l-[var(--color-warning)]"
-                    : "border-l-[var(--color-success)]";
-
+          <div className="divide-y divide-[var(--color-border-subtle)]">
+            {recommendations.map((rec, index) => {
+              const Icon = rec.severity === "critical" ? XCircle : rec.severity === "warning" ? AlertTriangle : CheckCircle2;
+              const iconColor = rec.severity === "critical" ? "text-[var(--color-danger)]" : rec.severity === "warning" ? "text-[var(--color-warning)]" : "text-[var(--color-success)]";
+              const priorityLabel = rec.priority === "critical" ? "Do first" : rec.priority === "important" ? "Next" : "Ongoing";
+              const priorityClass = rec.priority === "critical" ? "bg-[var(--color-danger)]/10 text-[var(--color-danger)]" : rec.priority === "important" ? "bg-[var(--color-warning)]/10 text-[var(--color-warning)]" : "bg-[var(--color-accent)]/10 text-[var(--color-accent)]";
               return (
-                <div
-                  key={rec.id}
-                  className={`rounded-lg border border-[var(--color-border-subtle)] border-l-2 ${borderColor} bg-[var(--color-bg-base)] p-4`}
-                >
+                <div key={rec.id} className="px-4 py-4 lg:px-5">
                   <div className="flex items-start gap-3">
-                    <Icon size={16} className={`mt-0.5 shrink-0 ${iconColor}`} />
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--color-bg-elevated)] text-[10px] font-semibold text-[var(--color-text-tertiary)]">{index + 1}</span>
                     <div className="min-w-0 flex-1">
-                      <h3 className="text-[13px] font-medium text-[var(--color-text-primary)]">
-                        {rec.title}
-                      </h3>
-                      <p className="mt-1 text-[12px] leading-relaxed text-[var(--color-text-secondary)]">
-                        {rec.description}
-                      </p>
-                      <div className="mt-3 space-y-1.5">
-                        {rec.actions.map((action, i) => (
-                          <div key={i} className="flex items-start gap-2 text-[11px]">
-                            <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-[var(--color-accent)]" />
-                            <span className="text-[var(--color-text-secondary)]">{action}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-3 rounded-md bg-[var(--color-bg-elevated)] px-2.5 py-1.5 text-[10px] font-medium text-[var(--color-text-tertiary)]">
-                        💡 {rec.estimatedImpact}
-                      </div>
+                      <div className="flex flex-wrap items-center gap-2"><Icon size={13} className={`shrink-0 ${iconColor}`} /><h3 className="text-[13px] font-medium text-[var(--color-text-primary)]">{rec.title}</h3><span className={`rounded-md px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${priorityClass}`}>{priorityLabel}</span></div>
+                      <p className="mt-1.5 text-[12px] leading-relaxed text-[var(--color-text-secondary)]">{rec.description}</p>
                     </div>
                   </div>
+                  <div className="ml-9 mt-3 rounded-md border-l-2 border-[var(--color-accent)]/40 bg-[var(--color-bg-base)] px-3 py-2"><div className="text-[9px] font-semibold uppercase tracking-wider text-[var(--color-accent)]">Why this matters</div><p className="mt-1 text-[11px] leading-relaxed text-[var(--color-text-secondary)]">{rec.whyMatters}</p></div>
+                  <div className="ml-9 mt-3 space-y-2">{rec.steps.map((step, i) => <div key={i} className="rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] p-3"><div className="flex items-start gap-2"><span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent)]/15 text-[9px] font-semibold text-[var(--color-accent)]">{i + 1}</span><div className="min-w-0 flex-1"><div className="text-[12px] font-medium text-[var(--color-text-primary)]">{step.action}</div><p className="mt-1 text-[11px] leading-relaxed text-[var(--color-text-secondary)]">{step.detail}</p>{step.example && <p className="mt-1.5 text-[10px] italic leading-relaxed text-[var(--color-text-tertiary)]">{step.example}</p>}</div></div></div>)}</div>
+                  <div className="ml-9 mt-3 flex flex-wrap items-center gap-2"><div className="flex items-center gap-1.5 rounded-md bg-[var(--color-bg-elevated)] px-2 py-1"><svg className="h-3 w-3 text-[var(--color-text-tertiary)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg><span className="text-[10px] font-medium text-[var(--color-text-secondary)]">{rec.timeEstimate}</span></div><div className="flex items-center gap-1.5 rounded-md bg-[var(--color-success)]/10 px-2 py-1"><svg className="h-3 w-3 text-[var(--color-success)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 7 13.5 15.5 8.5 10.5 2 17" /><path d="M16 7h6v6" /></svg><span className="text-[10px] font-medium text-[var(--color-success)]">{rec.impactEstimate}</span></div></div>
                 </div>
               );
             })}
           </div>
-        </Panel>
+        </div>
       )}
     </div>
   );

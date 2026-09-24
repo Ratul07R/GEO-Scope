@@ -294,14 +294,113 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+      {/* ══════════════════ WHY GEO MATTERS ══════════════════ */}
+      <section className="border-t border-[var(--color-border-subtle)] py-24 lg:py-32">
+        <div className="mx-auto max-w-6xl px-4 lg:px-6">
+          <Reveal>
+            <div className="max-w-2xl">
+              <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-[var(--color-accent)]">The shift</p>
+              <h2 className="mt-3 text-[36px] font-semibold leading-[1.1] tracking-[-0.03em] text-[var(--color-text-primary)] lg:text-[48px]">
+                Your customers are asking AI.
+                <br />
+                Is your brand in the answer?
+              </h2>
+            </div>
+          </Reveal>
+
+          {/* Two-column explainer */}
+          <div className="mt-14 grid grid-cols-1 gap-6 lg:grid-cols-3">
+            {/* Old way */}
+            <Reveal delay={0}>
+              <div className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-6">
+                <div className="text-[10px] font-medium uppercase tracking-[0.15em] text-[var(--color-text-tertiary)]">How it used to work</div>
+                <h3 className="mt-4 text-[18px] font-medium text-[var(--color-text-primary)]">Google gave you 10 links</h3>
+                <p className="mt-3 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
+                  Customers searched, scrolled, compared 5 websites, and made a decision. You had many chances to be seen.
+                </p>
+                <div className="mt-5 space-y-1.5">
+                  {["blue-link-1.com", "blue-link-2.com", "blue-link-3.com"].map((link) => (
+                    <div key={link} className="flex items-center gap-2 text-[11px] text-[var(--color-text-tertiary)]">
+                      <span className="h-1 w-1 rounded-full bg-[var(--color-text-tertiary)]" />{link}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Reveal>
+
+            {/* New way */}
+            <Reveal delay={100}>
+              <div className="rounded-2xl border border-[var(--color-accent)]/30 bg-gradient-to-br from-[var(--color-bg-surface)] to-[var(--color-bg-elevated)] p-6">
+                <div className="text-[10px] font-medium uppercase tracking-[0.15em] text-[var(--color-accent)]">How it works now</div>
+                <h3 className="mt-4 text-[18px] font-medium text-[var(--color-text-primary)]">AI gives one recommendation</h3>
+                <p className="mt-3 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
+                  Customers ask ChatGPT. It answers with 3-5 brand names. If you're not in that list, you don't exist for them.
+                </p>
+                <div className="mt-5 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] p-3">
+                  <div className="text-[10px] text-[var(--color-text-tertiary)]">&ldquo;Best note apps for teams?&rdquo;</div>
+                  <div className="mt-2 text-[11px] leading-relaxed text-[var(--color-text-secondary)]">
+                    &ldquo;Try <span className="font-medium text-[var(--color-accent)]">Notion</span>,<span className="ml-1">Coda, or Obsidian</span>...&rdquo;
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+
+            {/* The gap */}
+            <Reveal delay={200}>
+              <div className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-6">
+                <div className="text-[10px] font-medium uppercase tracking-[0.15em] text-[var(--color-text-tertiary)]">The problem</div>
+                <h3 className="mt-4 text-[18px] font-medium text-[var(--color-text-primary)]">40% start with AI now</h3>
+                <p className="mt-3 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
+                  Yet most brands have no idea what AI says about them. No visibility. No tracking. No plan.
+                </p>
+                <div className="mt-5 flex items-baseline gap-2">
+                  <span className="text-[28px] font-semibold tracking-tight text-[var(--color-text-primary)]">0%</span>
+                  <span className="text-[11px] text-[var(--color-text-tertiary)]">of brands know their AI visibility</span>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+
+          {/* Bottom explainer card */}
+          <Reveal delay={300}>
+            <div className="mt-8 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-6 lg:p-8">
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr,1.5fr] lg:items-center">
+                <div>
+                  <h3 className="text-[20px] font-semibold tracking-[-0.01em] text-[var(--color-text-primary)]">That&rsquo;s what GeoScope fixes.</h3>
+                  <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
+                    We track exactly what AI says about your brand across every major engine — then tell you precisely what to change to improve it.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {[
+                    { label: "Tracked engines", value: "4" },
+                    { label: "Queries per scan", value: "10" },
+                    { label: "Scan duration", value: "~2 min" },
+                    { label: "Free scans", value: "1/day" },
+                  ].map((stat) => (
+                    <div key={stat.label} className="rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] p-3">
+                      <div className="text-[20px] font-semibold tracking-tight text-[var(--color-text-primary)]">{stat.value}</div>
+                      <div className="mt-1 text-[10px] font-medium uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
       {/* HOW IT WORKS */}
       <section id="how-it-works" className="relative overflow-hidden border-t border-[var(--color-border-subtle)] py-24 lg:py-32">
         <div className="mx-auto max-w-6xl px-4 lg:px-6">
           <Reveal>
             <div className="max-w-2xl">
-              <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-[var(--color-accent)]">How it works</p>
+              <p className="text-[11px] font-medium uppercase tracking-[0.15em] text-[var(--color-accent)]">
+                How it works
+              </p>
               <h2 className="mt-3 text-[36px] font-semibold leading-[1.1] tracking-[-0.03em] text-[var(--color-text-primary)] lg:text-[48px]">
-                Three steps from invisible<br />to unmissable.
+                Three steps from invisible
+                <br />
+                to unmissable.
               </h2>
             </div>
           </Reveal>
