@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Panel, PanelHeader } from "@/components/ui/Panel";
-import { PrimaryButton } from "@/components/ui/Buttons";
 import { AreaChart, Sparkline } from "@/components/ui/Charts";
 import { getDashboardStats, type DashboardStats } from "@/lib/db";
 import { supabase } from "@/lib/supabase";
@@ -150,7 +149,13 @@ export default function DashboardPage() {
             </span>
             Live
           </span>
-          <PrimaryButton icon={<Plus size={15} />}>New Scan</PrimaryButton>
+          <Link
+            href="/dashboard/brands"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-[var(--color-accent)] px-3.5 text-[13px] font-medium text-white shadow-[0_0_0_1px_rgba(94,106,210,0.35),0_12px_28px_-14px_rgba(94,106,210,0.95)] transition-all hover:-translate-y-0.5 hover:bg-[var(--color-accent-hover)]"
+          >
+            <Plus size={15} />
+            New Scan
+          </Link>
         </PageHeader>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">

@@ -91,12 +91,12 @@ function UpgradeCard() {
             </span>
           </span>
         </div>
-        <button
-          type="button"
-          className="mt-3 h-9 w-full rounded-md bg-[var(--color-accent)] text-[12px] font-medium text-white transition-colors hover:bg-[var(--color-accent-hover)]"
+        <Link
+          href="/dashboard/settings"
+          className="mt-3 flex h-9 w-full items-center justify-center rounded-md bg-[var(--color-accent)] text-[12px] font-medium text-white transition-colors hover:bg-[var(--color-accent-hover)]"
         >
-          Upgrade plan
-        </button>
+          View plans
+        </Link>
       </div>
     </div>
   );

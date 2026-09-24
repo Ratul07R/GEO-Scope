@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, Menu, Search } from "lucide-react";
+import { Menu, Search } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 type HeaderProps = {
@@ -71,10 +71,12 @@ export function Header({ onMenuClick }: HeaderProps) {
         <Search size={13} className="shrink-0 text-[var(--color-text-tertiary)]" />
         <input
           type="text"
-          placeholder="Search brands, scans..."
-          className="h-full min-w-0 flex-1 bg-transparent text-[13px] text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-tertiary)]"
+          placeholder="Search (coming soon)"
+          disabled
+          title="Search will be available soon"
+          className="h-full min-w-0 flex-1 bg-transparent text-[13px] text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-tertiary)] cursor-not-allowed opacity-60"
         />
-        <kbd className="hidden shrink-0 items-center rounded border border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] px-1.5 py-0.5 font-sans text-[10px] leading-none text-[var(--color-text-tertiary)] sm:flex">
+        <kbd className="hidden shrink-0 items-center rounded border border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] px-1.5 py-0.5 font-sans text-[10px] leading-none text-[var(--color-text-tertiary)] opacity-60 sm:flex">
           ⌘K
         </kbd>
       </div>
@@ -86,20 +88,6 @@ export function Header({ onMenuClick }: HeaderProps) {
           className="h-8 shrink-0 rounded-md px-2 text-[12px] text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-surface)] hover:text-[var(--color-text-primary)]"
         >
           Sign out
-        </button>
-
-        <span
-          aria-hidden
-          className="hidden h-5 w-px bg-[var(--color-border-subtle)] sm:block"
-        />
-
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="relative flex h-9 w-9 items-center justify-center rounded-md text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-surface)] hover:text-[var(--color-text-primary)]"
-        >
-          <Bell size={16} />
-          <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-[var(--color-accent)] ring-2 ring-[var(--color-bg-base)]" />
         </button>
 
         <span aria-hidden className="hidden h-5 w-px bg-[var(--color-border-subtle)] sm:block" />
