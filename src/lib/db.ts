@@ -180,13 +180,15 @@ export async function listScans(
 export async function getScanWithMentions(
   client: SupabaseClient,
   scanId: string
-): Promise<{ scan: ScanRecord; mentions: MentionRecord[] }> {
+): Promise<{ scan: ScanRecord; mentions: MentionRecord[] } | null> {
   const { data: scan, error: scanErr } = await client
     .from("scans")
     .select("*, brand:brands(name)")
     .eq("id", scanId)
-    .single();
+    .maybeSingle();
+
   if (scanErr) throw new Error(scanErr.message);
+  if (!scan) return null;
 
   const { data: mentions, error: mentionErr } = await client
     .from("mentions")

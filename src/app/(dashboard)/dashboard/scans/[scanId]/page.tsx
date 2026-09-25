@@ -66,15 +66,30 @@ export default function ScanDetailPage() {
 
   useEffect(() => {
     if (!scanId) return;
-    let active = true;
     setLoading(true);
     setError("");
+
+    const uuidPattern =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidPattern.test(scanId)) {
+      setError("not_found");
+      setLoading(false);
+      return;
+    }
+
+    let active = true;
     getScanWithMentions(supabase, scanId)
       .then((result) => {
-        if (active) setData(result);
+        if (!active) return;
+        if (result === null) {
+          setError("not_found");
+        } else {
+          setData(result);
+        }
       })
       .catch((err: unknown) => {
-        if (active) setError(err instanceof Error ? err.message : "Could not load scan.");
+        if (!active) return;
+        setError(err instanceof Error ? err.message : "Could not load scan.");
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -101,6 +116,39 @@ export default function ScanDetailPage() {
             />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (error === "not_found") {
+    return (
+      <div className="mx-auto max-w-md rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] p-8 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-bg-elevated)]">
+          <svg
+            className="h-5 w-5 text-[var(--color-text-tertiary)]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+            <path d="M11 8v4" />
+            <path d="M11 16h.01" />
+          </svg>
+        </div>
+        <h2 className="mt-4 text-[15px] font-medium text-[var(--color-text-primary)]">
+          Scan not found
+        </h2>
+        <p className="mt-2 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
+          This scan may have been deleted, or the link is incorrect.
+        </p>
+        <Link
+          href="/dashboard/scans"
+          className="mt-5 inline-flex h-9 items-center justify-center rounded-md bg-[var(--color-accent)] px-4 text-[13px] font-medium text-white transition-colors hover:bg-[var(--color-accent-hover)]"
+        >
+          Back to scans
+        </Link>
       </div>
     );
   }
