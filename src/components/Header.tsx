@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Menu, Search } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { NotificationBell } from "@/components/NotificationBell";
 
 type HeaderProps = {
   onMenuClick: () => void;
@@ -68,13 +69,16 @@ export function Header({ onMenuClick }: HeaderProps) {
       </button>
 
       <div className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] px-2.5 transition-colors focus-within:border-[var(--color-accent)] sm:max-w-[280px]">
-        <Search size={13} className="shrink-0 text-[var(--color-text-tertiary)]" />
+        <Search
+          size={13}
+          className="shrink-0 text-[var(--color-text-tertiary)]"
+        />
         <input
           type="text"
           placeholder="Search (coming soon)"
           disabled
           title="Search will be available soon"
-          className="h-full min-w-0 flex-1 bg-transparent text-[13px] text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-tertiary)] cursor-not-allowed opacity-60"
+          className="h-full min-w-0 flex-1 cursor-not-allowed bg-transparent text-[13px] text-[var(--color-text-primary)] opacity-60 outline-none placeholder:text-[var(--color-text-tertiary)]"
         />
         <kbd className="hidden shrink-0 items-center rounded border border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] px-1.5 py-0.5 font-sans text-[10px] leading-none text-[var(--color-text-tertiary)] opacity-60 sm:flex">
           ⌘K
@@ -90,7 +94,12 @@ export function Header({ onMenuClick }: HeaderProps) {
           Sign out
         </button>
 
-        <span aria-hidden className="hidden h-5 w-px bg-[var(--color-border-subtle)] sm:block" />
+        <span
+          aria-hidden
+          className="hidden h-5 w-px bg-[var(--color-border-subtle)] sm:block"
+        />
+
+        <NotificationBell />
 
         <button
           type="button"

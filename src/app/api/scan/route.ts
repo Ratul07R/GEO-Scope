@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { checkScanQuota, markStuckScansAsFailed } from "@/lib/db";
+import {
+  checkScanQuota,
+  createNotification,
+  markStuckScansAsFailed,
+} from "@/lib/db";
 import { runScan } from "@/lib/scanner";
 
 export const maxDuration = 300;
@@ -109,6 +113,23 @@ export async function POST(request: Request) {
       brand.domain ?? "",
       competitorNames
     );
+
+    try {
+      await createNotification(
+        supabase,
+        user.id,
+        "Scan Complete",
+        `Your scan for ${brand.name} is ready. Score: ${result.score}/100.`,
+        "scan_complete"
+      );
+    } catch (notificationError) {
+      console.error(
+        "[scan] Failed to create completion notification:",
+        notificationError instanceof Error
+          ? notificationError.message
+          : String(notificationError)
+      );
+    }
 
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {

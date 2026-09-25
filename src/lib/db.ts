@@ -493,3 +493,68 @@ export async function markStuckScansAsFailed(
     .eq("status", "running")
     .lt("created_at", fiveMinAgo);
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Notifications
+// ═══════════════════════════════════════════════════════════════
+
+export type NotificationRecord = {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  type: string;
+  read: boolean;
+  created_at: string;
+};
+
+export async function createNotification(
+  client: SupabaseClient,
+  userId: string,
+  title: string,
+  message: string,
+  type: string = "system"
+): Promise<NotificationRecord> {
+  const { data, error } = await client
+    .from("notifications")
+    .insert({
+      user_id: userId,
+      title,
+      message,
+      type,
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Failed to create notification");
+
+  return data as NotificationRecord;
+}
+
+export async function getNotifications(
+  client: SupabaseClient,
+  userId: string
+): Promise<NotificationRecord[]> {
+  const { data, error } = await client
+    .from("notifications")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as NotificationRecord[];
+}
+
+export async function markNotificationAsRead(
+  client: SupabaseClient,
+  notificationId: string
+): Promise<void> {
+  const { error } = await client
+    .from("notifications")
+    .update({ read: true })
+    .eq("id", notificationId);
+
+  if (error) throw new Error(error.message);
+}
